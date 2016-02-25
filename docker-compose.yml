@@ -4,52 +4,52 @@
 # Media services.
 #
 ################################################################################
+version: '2'
 
-sabnzbd:
-  image: timhaak/sabnzbd
-  ports:
-  - "8080:8080"
-  - "9090:9090"
-  volumes:
-  - "./volumes/config/sabnzbd:/config"
-  - "./volumes/data:/data"
-  - "./volumes/scratch:/scratch"
+volumes:
+  # Encountered permissions issues with Plex volumes, but this one will work.
+  # This volume will persist over compose stop/starts but will be lost on
+  # Docker Machine removal!
+  plex_config:
+    driver: local
 
-couchpotato:
-  image: timhaak/couchpotato
-  ports:
-  - "5050:5050"
-  links:
-  - sabnzbd
-  volumes:
-  - "./volumes/config/couchpotato:/config"
-  - "./volumes/data:/mnt/data"
-  - "./volumes/scratch:/mnt/scratch"
+services:
+  sabnzbd:
+    image: timhaak/sabnzbd
+    ports:
+      - 8080:8080
+      - 9090:9090
+    volumes:
+      - ./volumes/config/sabnzbd:/config
+      - ./volumes/data:/data
+      - ./volumes/scratch:/scratch
 
-sickrage:
-  image: timhaak/sickrage
-  ports:
-  - "8081:8081"
-  links:
-  - sabnzbd
-  volumes:
-  - "./volumes/config/sickrage:/config"
-  - "./volumes/data:/data"
-  - "./volumes/scratch:/scratch"
+  couchpotato:
+    image: timhaak/couchpotato
+    ports:
+      - 5050:5050
+    links:
+      - sabnzbd
+    volumes:
+      - ./volumes/config/couchpotato:/config
+      - ./volumes/data:/mnt/data
+      - ./volumes/scratch:/mnt/scratch
 
-plex_config:
-  image: busybox
-  volumes:
-  - /config
+  sickrage:
+    image: timhaak/sickrage
+    ports:
+      - 8081:8081
+    links:
+      - sabnzbd
+    volumes:
+      - ./volumes/config/sickrage:/config
+      - ./volumes/data:/data
+      - ./volumes/scratch:/scratch
 
-plex:
-  image: linuxserver/plex
-  net: "host"
-  ports:
-    - "32400:32400"
-  volumes:
-    #- "./volumes/config/plex:/config"
-    - "./volumes/data/Movies:/mnt/Movies"
-    - "./volumes/data/TV:/mnt/TV"
-  volumes_from:
-    - plex_config
+  plex:
+    image: linuxserver/plex
+    network_mode: host
+    volumes:
+      - plex_config:/config
+      - ./volumes/data/Movies:/mnt/Movies
+      - ./volumes/data/TV:/mnt/TV
